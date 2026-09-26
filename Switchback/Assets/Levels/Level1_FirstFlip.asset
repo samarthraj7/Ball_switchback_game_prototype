@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c608e443a128945ed85d5bc7bbfd228f, type: 3}
+  m_Name: Level1_FirstFlip
+  m_EditorClassIdentifier: Assembly-CSharp::LevelData
+  levelName: First Flip
+  moveLimit: 7
+  intro: 'Tilt the board with the arrow keys. The ball rolls until it hits a wall. Rolling over the yellow switch flips every purple switch wall: raised ones drop, lowered ones rise.'
+  rows:
+  - '#########'
+  - '#...1...#'
+  - '#.B#....#'
+  - '#2.....##'
+  - '###o...A#'
+  - '#.#..#..#'
+  - '#...#..##'
+  - '#########'
