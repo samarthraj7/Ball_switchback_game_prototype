@@ -29,14 +29,18 @@ public class GameManager : MonoBehaviour
     public float cellsPerSecond = 16f;
 
     static readonly Color FloorA = Hex("#1a2131"), FloorB = Hex("#1c2436"), WallColor = Hex("#44516f");
-    static readonly Color SwitchColor = Hex("#ffd66b"), Raised = Hex("#6f4fc2"), Lowered = new Color(0.69f, 0.55f, 1f, 0.25f);
+    static readonly Color SwitchColor = Hex("#ffd66b"), WallFill = Hex("#6f4fc2"), WallOutline = Hex("#c9b0ff");
     static readonly Color GoalRing = Hex("#3ee07f"), GoalHole = Hex("#05070c"), StartColor = new Color(0.5f, 0.84f, 1f, 0.3f);
+
+    const float SwitchWallSize = 0.84f, OutlineWidth = 0.08f;
+    const int DashesPerSide = 4;
 
     LevelData level;
     int levelIndex;
     BallState state;
     readonly Stack<BallState> history = new Stack<BallState>();
-    readonly List<(SpriteRenderer sr, bool startsRaised)> switchWalls = new List<(SpriteRenderer, bool)>();
+    readonly List<(GameObject solid, GameObject dotted, bool startsRaised)> switchWalls =
+        new List<(GameObject, GameObject, bool)>();
     Transform board, ball;
     bool busy, won;
     Vector2 swipeStart;
@@ -197,7 +201,7 @@ public class GameManager : MonoBehaviour
                     case 'o': Make(circle, p, SwitchColor, 0.55f, 1); break;
                     case '1':
                     case '2':
-                        switchWalls.Add((Make(square, p, Raised, 0.86f, 1), c == '1'));
+                        MakeSwitchWall(p, c == '1');
                         break;
                 }
             }
@@ -207,8 +211,56 @@ public class GameManager : MonoBehaviour
 
     void ApplyWalls(bool flipped)
     {
-        foreach (var (sr, startsRaised) in switchWalls)
-            sr.color = startsRaised != flipped ? Raised : Lowered;
+        foreach (var (solid, dotted, startsRaised) in switchWalls)
+        {
+            bool raised = startsRaised != flipped;
+            solid.SetActive(raised);
+            dotted.SetActive(!raised);
+        }
+    }
+
+    // Raised: filled block with a solid outline. Lowered: dotted outline only.
+    void MakeSwitchWall(Vector2Int p, bool startsRaised)
+    {
+        var root = new GameObject("SwitchWall").transform;
+        root.SetParent(board);
+        root.position = ToWorld(p);
+
+        float s = SwitchWallSize, w = OutlineWidth, edge = (s - w) / 2f;
+
+        var solid = new GameObject("Raised").transform;
+        solid.SetParent(root, false);
+        MakeRect(solid, Vector2.zero, new Vector2(s, s), WallFill, 1);
+        MakeRect(solid, new Vector2(0f, edge), new Vector2(s, w), WallOutline, 2);
+        MakeRect(solid, new Vector2(0f, -edge), new Vector2(s, w), WallOutline, 2);
+        MakeRect(solid, new Vector2(-edge, 0f), new Vector2(w, s), WallOutline, 2);
+        MakeRect(solid, new Vector2(edge, 0f), new Vector2(w, s), WallOutline, 2);
+
+        var dotted = new GameObject("Lowered").transform;
+        dotted.SetParent(root, false);
+        float step = s / DashesPerSide, dash = step / 2f;
+        for (int i = 0; i < DashesPerSide; i++)
+        {
+            float t = -s / 2f + step * (i + 0.5f);
+            MakeRect(dotted, new Vector2(t, edge), new Vector2(dash, w), WallOutline, 2);
+            MakeRect(dotted, new Vector2(t, -edge), new Vector2(dash, w), WallOutline, 2);
+            MakeRect(dotted, new Vector2(-edge, t), new Vector2(w, dash), WallOutline, 2);
+            MakeRect(dotted, new Vector2(edge, t), new Vector2(w, dash), WallOutline, 2);
+        }
+
+        switchWalls.Add((solid.gameObject, dotted.gameObject, startsRaised));
+    }
+
+    void MakeRect(Transform parent, Vector2 localPos, Vector2 size, Color color, int order)
+    {
+        var go = new GameObject("Rect");
+        go.transform.SetParent(parent, false);
+        go.transform.localPosition = localPos;
+        go.transform.localScale = new Vector3(size.x, size.y, 1f);
+        var sr = go.AddComponent<SpriteRenderer>();
+        sr.sprite = square;
+        sr.color = color;
+        sr.sortingOrder = order;
     }
 
     SpriteRenderer Make(Sprite sprite, Vector2Int p, Color color, float scale, int order)
